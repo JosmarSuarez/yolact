@@ -60,7 +60,7 @@ parser.add_argument('--save_interval', default=10000, type=int,
                     help='The number of iterations between saving the model.')
 parser.add_argument('--validation_size', default=5000, type=int,
                     help='The number of images to use for validation.')
-parser.add_argument('--validation_epoch', default=2, type=int,
+parser.add_argument('--validation_iter', default=10000, type=int,
                     help='Output validation information every n iterations. If -1, do no validation.')
 parser.add_argument('--keep_latest', dest='keep_latest', action='store_true',
                     help='Only keep the latest checkpoint instead of each one.')
@@ -78,6 +78,10 @@ parser.add_argument('--batch_alloc', default=None, type=str,
                     help='If using multiple GPUS, you can set this to be a comma separated list detailing which GPUs should get what local batch size (It should add up to your total batch size).')
 parser.add_argument('--no_autoscale', dest='autoscale', action='store_false',
                     help='YOLACT will automatically scale the lr and the number of iterations depending on the batch size. Set this if you want to disable that.')
+parser.add_argument('--eval_only_person', default=False, dest='eval_only_person', action='store_true',
+                    help='Only evaluate on the person class, ignore the other classes.')
+parser.add_argument('--only_last_layer', default=False, dest='only_last_layer', action='store_true',
+                    help='Only train (fine-tune) the last layer.')
 
 parser.set_defaults(keep_latest=False, log=True, log_gpu=False, interrupt=True, autoscale=True)
 args = parser.parse_args()
@@ -177,14 +181,14 @@ def train():
                             info_file=cfg.dataset.train_info,
                             transform=SSDAugmentation(MEANS))
     
-    if args.validation_epoch > 0:
+    if args.validation_iter > 0:
         setup_eval()
         val_dataset = COCODetection(image_path=cfg.dataset.valid_images,
                                     info_file=cfg.dataset.valid_info,
                                     transform=BaseTransform(MEANS))
 
     # Parallel wraps the underlying module, but when saving and loading we don't want that
-    yolact_net = Yolact()
+    yolact_net = Yolact(only_last_layer=args.only_last_layer)
     net = yolact_net
     net.train()
 
@@ -266,6 +270,10 @@ def train():
             # Resume from start_iter
             if (epoch+1)*epoch_size < iteration:
                 continue
+                
+            # Stop at the configured number of iterations even if mid-epoch
+            if iteration >= cfg.max_iter:
+                break
             
             for datum in data_loader:
                 # Stop if we've reached an epoch if we're resuming from start_iter
@@ -273,7 +281,7 @@ def train():
                     break
 
                 # Stop at the configured number of iterations even if mid-epoch
-                if iteration == cfg.max_iter:
+                if iteration >= cfg.max_iter:
                     break
 
                 # Change a config setting if we've reached the specified iteration
@@ -365,10 +373,9 @@ def train():
                             print('Deleting old save...')
                             os.remove(latest)
             
-            # This is done per epoch
-            if args.validation_epoch > 0:
-                if epoch % args.validation_epoch == 0 and epoch > 0:
-                    compute_validation_map(epoch, iteration, yolact_net, val_dataset, log if args.log else None)
+                    if args.validation_iter > 0:
+                        if iteration % args.validation_iter == 0:
+                            compute_validation_map(epoch, iteration, yolact_net, val_dataset, log if args.log else None)
         
         # Compute validation mAP after training is finished
         compute_validation_map(epoch, iteration, yolact_net, val_dataset, log if args.log else None)
@@ -498,7 +505,10 @@ def compute_validation_map(epoch, iteration, yolact_net, dataset, log:Log=None):
         yolact_net.train()
 
 def setup_eval():
-    eval_script.parse_args(['--no_bar', '--max_images='+str(args.validation_size)])
+    args_list = ['--no_bar', '--max_images='+str(args.validation_size)]
+    if args.eval_only_person:
+      args_list += ['--only_person']
+    eval_script.parse_args(args_list)
 
 if __name__ == '__main__':
     train()

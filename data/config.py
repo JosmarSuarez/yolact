@@ -172,7 +172,36 @@ pascal_sbd_dataset = dataset_base.copy({
     'class_names': PASCAL_CLASSES,
 })
 
+#Added by me
+cig_butts_dataset = dataset_base.copy({
+  'name': 'Immersive Limit - Cigarette Butts',
+  'train_info': '/home/josmar/proyectos/codes/datasets/cig_butts/train/coco_annotations.json',
+  'train_images': '/home/josmar/proyectos/codes/datasets/cig_butts/train/images/',
+  'valid_info': '/home/josmar/proyectos/codes/datasets/cig_butts/val/coco_annotations.json',
+  'valid_images': '/home/josmar/proyectos/codes/datasets/cig_butts/val/images/',
+  'class_names': ('cig_butt'),
+  'label_map': { 1:  1 }
+})
 
+ucb_gait_dataset = dataset_base.copy({
+  'name': 'UCB - ucb_gait',
+  'train_info': '/home/josmar/proyectos/codes/datasets/ucb_gait_frames/annotations/ucb_gait_train.json',
+  'train_images': '/home/josmar/proyectos/codes/datasets/ucb_gait_frames/images/',
+  'valid_info': '/home/josmar/proyectos/codes/datasets/ucb_gait_frames/annotations/ucb_gait_val.json',
+  'valid_images': '/home/josmar/proyectos/codes/datasets/ucb_gait_frames/images/',
+  'class_names': ('person',),
+  'label_map': { 1:  1 }
+})
+
+ucb_gait_square_dataset = dataset_base.copy({
+  'name': 'UCB - ucb_gait_square',
+  'train_info': '/home/josmar/proyectos/codes/datasets/ucb_gait_square/annotations/ucb_gait_train.json',
+  'train_images': '/home/josmar/proyectos/codes/datasets/ucb_gait_square/images/',
+  'valid_info': '/home/josmar/proyectos/codes/datasets/ucb_gait_square/annotations/ucb_gait_val.json',
+  'valid_images': '/home/josmar/proyectos/codes/datasets/ucb_gait_square/images/',
+  'class_names': ('person',),
+  'label_map': { 1:  1 }
+})
 
 
 
@@ -657,8 +686,8 @@ yolact_base_config = coco_base_config.copy({
     'name': 'yolact_base',
 
     # Dataset stuff
-    'dataset': coco2017_dataset,
-    'num_classes': len(coco2017_dataset.class_names) + 1,
+    'dataset': coco2017_dataset,#Original:coco2017_dataset
+    'num_classes': len(coco2017_dataset.class_names) + 1,#Original:coco2017_dataset
 
     # Image Size
     'max_size': 550,
@@ -767,6 +796,26 @@ yolact_resnet50_pascal_config = yolact_resnet50_config.copy({
     })
 })
 
+# Added by me
+yolact_resnet50_cig_butts_config = yolact_resnet50_config.copy({
+    'name': 'yolact_plus_resnet50_cig_butts',
+    # Dataset stuff
+    'dataset': cig_butts_dataset,
+    'num_classes': len(cig_butts_dataset.class_names) + 1,
+
+    # Image Size
+    'max_size': 512,
+})
+
+yolact_resnet101_ucb_gait_config = yolact_im700_config.copy({
+    'name': 'yolact_plus_resnet101_ucb_gait',
+    # Dataset stuff
+    'dataset': ucb_gait_square_dataset,
+    'num_classes': len(ucb_gait_square_dataset.class_names) + 1,
+
+    # Image Size
+    'max_size': 512,
+})
 # ----------------------- YOLACT++ CONFIGS ----------------------- #
 
 yolact_plus_base_config = yolact_base_config.copy({

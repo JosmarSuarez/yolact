@@ -337,7 +337,7 @@ class LogVisualizer():
 
     def plot(self, entry_type:str, x:str, y:str, smoothness:int=0):
         """ Plot sequential log data. """
-
+        fig = plt.figure #added by me
         query_x = self._decode(x)
         query_y = self._decode(y)
 
@@ -371,6 +371,7 @@ class LogVisualizer():
         plt.legend()
         plt.grid(linestyle=':', linewidth=0.5)
         plt.show()
+        return fig  #Added by me
 
     def bar(self, entry_type:str, x:str, labels:list=None, diff:bool=False, x_idx:int=-1):
         """ Plot a bar chart. The result of x should be list or dictionary. """

@@ -202,6 +202,15 @@ ucb_gait_square_dataset = dataset_base.copy({
   'class_names': ('person',),
   'label_map': { 1:  1 }
 })
+ucb_gait_random_crop_dataset = dataset_base.copy({
+  'name': 'UCB - ucb_gait_random_crop',
+  'train_info': '/home/josmar/proyectos/codes/datasets/ucb_gait_cropped/cropped_train_ucb_gait.json',
+  'train_images': '/home/josmar/proyectos/codes/datasets/ucb_gait_cropped/images/',
+  'valid_info': '/home/josmar/proyectos/codes/datasets/ucb_gait_cropped/cropped_val_ucb_gait.json',
+  'valid_images': '/home/josmar/proyectos/codes/datasets/ucb_gait_cropped/images/',
+  'class_names': ('person',),
+  'label_map': { 1:  1 }
+})
 
 
 
@@ -816,6 +825,16 @@ yolact_resnet101_ucb_gait_config = yolact_im700_config.copy({
     # Image Size
     'max_size': 512,
 })
+yolact_resnet101_ucb_gait_rc_config = yolact_im700_config.copy({
+    'name': 'yolact_plus_resnet101_rc_ucb_gait',
+    # Dataset stuff
+    'dataset': ucb_gait_random_crop_dataset,
+    'num_classes': len(ucb_gait_square_dataset.class_names) + 1,
+
+    # Image Size
+    'max_size': 512,
+})
+
 # ----------------------- YOLACT++ CONFIGS ----------------------- #
 
 yolact_plus_base_config = yolact_base_config.copy({

@@ -255,6 +255,11 @@ def train():
                                   shuffle=True, collate_fn=detection_collate,
                                   pin_memory=True)
     
+    data_loader_val = data.DataLoader(val_dataset, args.batch_size,
+                                  num_workers=args.num_workers,
+                                  shuffle=True, collate_fn=detection_collate,
+                                  pin_memory=True)
+    
     
     save_path = lambda epoch, iteration: SavePath(cfg.name, epoch, iteration).get_path(root=args.save_folder)
     time_avg = MovingAverage()
@@ -376,9 +381,13 @@ def train():
                     if args.validation_iter > 0:
                         if iteration % args.validation_iter == 0:
                             compute_validation_map(epoch, iteration, yolact_net, val_dataset, log if args.log else None)
+                            # Added compute validation_loss
+                            compute_validation_loss(net, data_loader_val, criterion, epoch =epoch, iteration = iteration, log=log if args.log else None)
         
         # Compute validation mAP after training is finished
         compute_validation_map(epoch, iteration, yolact_net, val_dataset, log if args.log else None)
+        # Added compute validation_loss
+        compute_validation_loss(net, data_loader_val, criterion, epoch =epoch, iteration = iteration, log=log if args.log else None)
     except KeyboardInterrupt:
         if args.interrupt:
             print('Stopping early. Saving network...')
@@ -456,38 +465,34 @@ def no_inf_mean(x:torch.Tensor):
     else:
         return x.mean()
 
-def compute_validation_loss(net, data_loader, criterion):
+def compute_validation_loss(net, data_loader, criterion, epoch, iteration, log:Log=None):
     global loss_types
-
+    loss_avgs  = { k: MovingAverage(100) for k in loss_types }
     with torch.no_grad():
-        losses = {}
-        
         # Don't switch to eval mode because we want to get losses
-        iterations = 0
+        
+        print("Computing Validation loss ...")
         for datum in data_loader:
             images, targets, masks, num_crowds = prepare_data(datum)
-            out = net(images)
+            losses = net(datum)
 
-            wrapper = ScatterWrapper(targets, masks, num_crowds)
-            _losses = criterion(out, wrapper, wrapper.make_mask())
-            
-            for k, v in _losses.items():
-                v = v.mean().item()
-                if k in losses:
-                    losses[k] += v
-                else:
-                    losses[k] = v
-
-            iterations += 1
-            if args.validation_size <= iterations * args.batch_size:
-                break
-        
-        for k in losses:
-            losses[k] /= iterations
-            
-        
+            losses = { k: (v).mean() for k,v in losses.items() } # Mean here because Dataparallel
+            loss = sum([losses[k] for k in losses])
+                 
         loss_labels = sum([[k, losses[k]] for k in loss_types if k in losses], [])
         print(('Validation ||' + (' %s: %.3f |' * len(losses)) + ')') % tuple(loss_labels), flush=True)
+        print("\n")
+        if log is not None:
+            precision = 5
+            loss_info = {k: round(losses[k].item(), precision) for k in losses}
+            loss_info['T'] = round(loss.item(), precision)
+
+            if args.log_gpu:
+                log.log_gpu_stats = (iteration % 10 == 0) # nvidia-smi is sloooow
+                            
+            log.log('val_loss', loss=loss_info, epoch=epoch, iter=iteration)
+
+            log.log_gpu_stats = args.log_gpu
 
 def compute_validation_map(epoch, iteration, yolact_net, dataset, log:Log=None):
     with torch.no_grad():

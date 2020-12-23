@@ -681,7 +681,7 @@ coco_base_config = Config({
 
     'maskiou_alpha': 1.0,
     'rescore_mask': False,
-    'rescore_bbox': False,
+    'rescore_bbox': True,
     'maskious_to_train': -1,
 })
 
@@ -825,7 +825,7 @@ yolact_resnet101_ucb_gait_config = yolact_im700_config.copy({
     # Image Size
     'max_size': 512,
 })
-yolact_resnet101_ucb_gait_rc_config = yolact_im700_config.copy({
+yolact_plus_resnet101_rc_ucb_gait_config = yolact_im700_config.copy({
     'name': 'yolact_plus_resnet101_rc_ucb_gait',
     # Dataset stuff
     'dataset': ucb_gait_random_crop_dataset,
@@ -871,6 +871,16 @@ yolact_plus_resnet50_config = yolact_plus_base_config.copy({
         'preapply_sqrt': False,
         'use_square_anchors': False,
     }),
+})
+##### Added by me
+yolact_pp_101_rc_ucb_gait_config = yolact_plus_base_config.copy({
+    'name': 'yolact_pp_101_rc_ucb_gait',
+    # Dataset stuff
+    'dataset': ucb_gait_random_crop_dataset,
+    'num_classes': len(ucb_gait_square_dataset.class_names) + 1,
+
+    # Image Size
+    'max_size': 512,
 })
 
 
